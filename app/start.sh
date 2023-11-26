@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Wait for the database to start
+echo "Waiting for database to start..."
+while ! nc -z db 3306; do
+  sleep 1
+done
+
+echo "Database started"
+
+# Apply database migrations
+/app/bin/alembic -c /app/alembic.ini upgrade head
+
+# Run the main application
+exec "$@"
