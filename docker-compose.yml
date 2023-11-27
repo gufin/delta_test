@@ -8,7 +8,7 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - ./app/.env
+      - .env
 
   cost_calculator:
     build:
@@ -19,7 +19,7 @@ services:
       - db
       - redis
     env_file:
-      - ./app/.env
+      - .env
 
   db:
     image: mysql:8.0
@@ -29,8 +29,6 @@ services:
     expose:
       - "3306"
     restart: always
-    ports:
-      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
 
@@ -39,8 +37,8 @@ services:
     image: redis:7.0-alpine
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
 
 volumes:
   mysql_data:
