@@ -25,7 +25,7 @@ class PackageCostCalculator:
         logger.info("PackageCostCalculator service has been initialized.")
 
     @staticmethod
-    def get_date_code():
+    def get_date_code() -> str:
         today = datetime.now()
         if today.weekday() not in [5, 6]:
             date_code = today.strftime("%Y-%m-%d")
@@ -66,7 +66,7 @@ class PackageCostCalculator:
         except Exception as e:
             logger.error(f"An error occurred while fetching exchange rate: {e}")
 
-    async def calculate_delivery_cost(self):
+    async def calculate_delivery_cost(self) -> None:
         logger.info("Starting delivery cost calculation.")
         rate = await self.get_current_exchange_rate(self.config.currency_calc_code)
         if rate is None:

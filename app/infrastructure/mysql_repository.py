@@ -4,13 +4,13 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from infrastructure.entities import (
+from infrastructure.models import (
     engine,
     Package,
     PackageType,
     User,
 )
-from models import (
+from schemas import (
     MyPackages,
     PackageCreate,
     PackageInfo,
@@ -27,7 +27,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
         self.config = config
 
     async def register_package(
-        self, package_data: PackageCreate, user_id: int
+        self, package_data: PackageCreate, user_id: str
     ) -> PackageResponse:
         new_package = Package(
             name=package_data.name,
@@ -58,7 +58,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
 
     async def get_my_packages(
         self,
-        user_id: int,
+        user_id: str,
         type_id: Optional[int],
         delivery_cost_calculated: Optional[bool],
         offset: int,
@@ -109,7 +109,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
                 data=package_infos,
             )
 
-    async def get_package(self, user_id: int, package_id: int) -> Optional[PackageInfo]:
+    async def get_package(self, user_id: str, package_id: int) -> Optional[PackageInfo]:
         async with AsyncSession(engine) as session:
             conditions = [Package.user_id == user_id, Package.id == package_id]
             package_query = select(Package).where(and_(*conditions))
@@ -134,7 +134,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
                 package_type=PackageTypeModel.from_orm(package_type),
             )
 
-    async def get_or_create_user(self, user_id: int) -> UserInfo:
+    async def get_or_create_user(self, user_id: str) -> UserInfo:
         async with AsyncSession(engine) as session:
             user_query = select(User).where(User.id == user_id)
             user_result = await session.execute(user_query)

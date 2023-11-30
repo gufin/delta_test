@@ -56,7 +56,7 @@ class MyPackages(BaseModel):
 
 
 class UserInfo(BaseModel):
-    id: int
+    id: str
     last_access_time: Optional[datetime]
 
     class Config:

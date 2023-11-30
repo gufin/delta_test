@@ -11,9 +11,7 @@ cost_calculator = PackageCostCalculator(my_sql_repository, redis_repository, set
 
 
 async def main():
-    while True:
-        await cost_calculator.calculate_delivery_cost()
-        await asyncio.sleep(300)
+    await cost_calculator.calculate_delivery_cost()
 
 
 if __name__ == "__main__":

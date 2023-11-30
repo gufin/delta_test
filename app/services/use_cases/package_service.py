@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from models import (
+from schemas import (
     MyPackages,
     PackageCreate,
     PackageInfo,
@@ -19,10 +19,9 @@ class PackageService:
         self.repository = repository
 
     async def register_package(
-        self, package_data: PackageCreate, user_id: int
+        self, package_data: PackageCreate, user_id: str
     ) -> PackageResponse:
         logger.info("Registering package for user_id: %s", user_id)
-        await self.repository.get_or_create_user(user_id)
         response = await self.repository.register_package(package_data, user_id)
         logger.info("Package registered with id: %s", response.id)
         return response
@@ -35,7 +34,7 @@ class PackageService:
 
     async def get_my_packages(
         self,
-        user_id: int,
+        user_id: str,
         type_id: Optional[int],
         delivery_cost_calculated: Optional[bool],
         offset: int,
@@ -48,7 +47,7 @@ class PackageService:
         logger.info("Packages retrieved for user_id: %s", user_id)
         return my_packages
 
-    async def get_package(self, user_id: int, package_id: int) -> PackageInfo:
+    async def get_package(self, user_id: str, package_id: int) -> PackageInfo:
         logger.info(
             "Retrieving package with id: %s for user_id: %s", package_id, user_id
         )
@@ -58,3 +57,6 @@ class PackageService:
         else:
             logger.info("Cant find package: %s for user %s", package_id, user_id)
         return package_info
+
+    async def save_session(self, session_id: str) -> None:
+        await self.repository.get_or_create_user(session_id)

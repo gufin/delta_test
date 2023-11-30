@@ -1,16 +1,30 @@
-FROM python:3.10-alpine3.17 as builder
+# Использование образа python:3.10-slim
+FROM python:3.10-slim as builder
 
-RUN python3 -m venv /app
-RUN /app/bin/pip install -U pip
+# Установка pip
+RUN python -m pip install --upgrade pip
 
-COPY requirements.txt /mnt/
-RUN /app/bin/pip install -Ur /mnt/requirements.txt
+# Копирование файла requirements.txt
+COPY requirements.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-FROM python:3.10-alpine3.17 as app
+# Настройка окончательного образа
+FROM python:3.10-slim as app
 
+# Установка cron
+RUN apt-get update && apt-get install -y cron
+
+# Создание рабочей директории
 WORKDIR /app
 
-COPY --from=builder /app /app
+# Копирование зависимостей из builder
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+
+# Копирование вашего приложения
 COPY app /app
 
-CMD ["/app/bin/python", "cost_calculator_scheduler.py"]
+# Добавление cron задания
+RUN echo "*/5 * * * * /usr/local/bin/python3 /app/cost_calculator_scheduler.py >> /var/log/cron.log 2>&1" | crontab -
+
+# Запуск cron в фоновом режиме
+CMD ["cron", "-f"]

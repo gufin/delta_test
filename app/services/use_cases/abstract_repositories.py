@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from models import (
+from schemas import (
     MyPackages,
     PackageCreate,
     PackageInfo,
@@ -15,7 +15,7 @@ from models import (
 class DeltaAbstractRepository(ABC):
     @abstractmethod
     async def register_package(
-        self, package_data: PackageCreate, user_id: int
+        self, package_data: PackageCreate, user_id: str
     ) -> PackageResponse:
         pass
 
@@ -35,11 +35,11 @@ class DeltaAbstractRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_package(self, user_id: int, package_id: int) -> PackageInfo:
+    async def get_package(self, user_id: str, package_id: int) -> PackageInfo:
         pass
 
     @abstractmethod
-    async def get_or_create_user(self, user_id: int) -> UserInfo:
+    async def get_or_create_user(self, user_id: str) -> UserInfo:
         pass
 
     @abstractmethod
