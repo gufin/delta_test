@@ -1,6 +1,5 @@
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
-import datetime
 from os import environ
 from uuid import uuid4
 
@@ -23,7 +22,7 @@ from infrastructure.models import User
 from main import get_application
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def temp_postgres() -> str:
     """
     Создает временную БД для запуска теста.
@@ -43,7 +42,7 @@ def temp_postgres() -> str:
         drop_database(tmp_url)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def alembic_config(temp_postgres):
     config = Config("alembic.ini")
     config.set_main_option("sqlalchemy.url", settings.storage_url_sync)
@@ -57,14 +56,14 @@ async def engine_async(temp_postgres) -> AsyncEngine:
     await engine.dispose()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def session_factory_async(engine_async) -> async_sessionmaker:
     return async_sessionmaker(
         engine_async, class_=AsyncSession, expire_on_commit=False
     )  # noqa: W0621
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 async def session(session_factory_async) -> AsyncSession:
     async with session_factory_async() as session:  # noqa: W0621
         yield session  # noqa: W0621
@@ -75,16 +74,16 @@ def run_upgrade(connection, cfg):
     upgrade(cfg, "head")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 async def migrated_postgres(engine_async: AsyncEngine, alembic_config):
     async with engine_async.begin() as conn:
         await conn.run_sync(run_upgrade, alembic_config)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def container(session_factory_async):
     test_container = Container()
-    test_container.config.from_dict(settings.model_dump())
+    test_container.config.from_pydantic(settings)
 
     def get_temp_sessionmaker():
         return session_factory_async
@@ -95,7 +94,7 @@ def container(session_factory_async):
     test_container.unwire()  # pylint: disable=no-member
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(autouse=True)
 async def user_data_sample(migrated_postgres, session):
     """
     Create courier sample for tests.
@@ -106,7 +105,7 @@ async def user_data_sample(migrated_postgres, session):
     await session.commit()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def client(migrated_postgres, session_factory_async):
     app = get_application()
 

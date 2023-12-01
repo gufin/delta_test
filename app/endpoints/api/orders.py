@@ -44,7 +44,7 @@ async def start_session(session_id: Optional[str] = Cookie(None),
 @inject
 async def register_package(
         package_data: PackageCreate,
-        session_id: Optional[str] = Cookie(None),
+        session_id: str = Cookie(...),
         package_service: PackageService = Depends(Provide[Container.package_service]),
 ) -> PackageResponse:
     return await package_service.register_package(package_data, session_id)

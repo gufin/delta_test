@@ -17,6 +17,7 @@ class Container(containers.DeclarativeContainer):
     repository: providers.Provider[DeltaMySQLRepository] = providers.Singleton(
         DeltaMySQLRepository,
         config=config.storage_url,
+        sessionmaker=sessionmaker,
     )
 
     redis_repository: providers.Provider[RedisTemporaryStorage] = providers.Singleton(
