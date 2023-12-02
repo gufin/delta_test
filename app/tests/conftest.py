@@ -50,10 +50,10 @@ def alembic_config(temp_postgres):
 
 
 @pytest.fixture(scope="function")
-async def engine_async(temp_postgres) -> AsyncEngine:
+def engine_async(temp_postgres) -> AsyncEngine:
     engine = create_async_engine(temp_postgres, future=True, echo=True)
-    yield engine
-    await engine.dispose()
+    return engine
+    #await engine.dispose()
 
 
 @pytest.fixture
@@ -65,8 +65,8 @@ def session_factory_async(engine_async) -> async_sessionmaker:
 
 @pytest.fixture
 async def session(session_factory_async) -> AsyncSession:
-    async with session_factory_async() as session:  # noqa: W0621
-        yield session  # noqa: W0621
+    async with session_factory_async() as sessiont:  # noqa: W0621
+        yield sessiont  # noqa: W0621
 
 
 def run_upgrade(connection, cfg):
@@ -94,7 +94,7 @@ def container(session_factory_async):
     test_container.unwire()  # pylint: disable=no-member
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 async def user_data_sample(migrated_postgres, session):
     """
     Create courier sample for tests.

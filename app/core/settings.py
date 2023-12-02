@@ -1,4 +1,4 @@
-from pydantic import BaseSettings, Field
+from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     currency_calc_code: str = "USD"
     redis_host: str = '127.0.0.1'
     redis_port: int = 6380
+    mongo_host: str = '127.0.0.1'
+    mongo_port: int = 27017
 
     @property
     def storage_url(self):

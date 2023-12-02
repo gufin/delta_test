@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
@@ -7,7 +8,7 @@ from starlette.responses import JSONResponse
 
 from core.containers import Container
 from schemas import (
-    MyPackages,
+    CalculationLogAggregatedModel, MyPackages,
     PackageCreate,
     PackageInfo,
     PackageResponse,
@@ -117,3 +118,19 @@ async def run_calculation(
 ):
     await cost_calculator.calculate_delivery_cost()
     return {"message": "Calculation is complete."}
+
+
+@router.post(
+    "/aggregated_data",
+    response_model=list[CalculationLogAggregatedModel],
+    summary="Show aggregated data by type by period",
+    description="Show aggregated data by type by period",
+)
+@inject
+async def aggregated_data(
+        date: datetime,
+        cost_calculator: PackageCostCalculator = Depends(
+            Provide[Container.cost_calculator]
+        ),
+):
+    return await cost_calculator.get_aggregated_data(date)

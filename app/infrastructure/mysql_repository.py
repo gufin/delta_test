@@ -158,6 +158,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
             return [
                 PackageToCalc(
                     id=package.id,
+                    package_type_id=package.type_id,
                     name=package.name,
                     weight=package.weight,
                     delivery_cost=package.delivery_cost,

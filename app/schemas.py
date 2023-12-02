@@ -65,6 +65,7 @@ class UserInfo(BaseModel):
 
 class PackageToCalc(BaseModel):
     id: int
+    package_type_id: int
     name: str
     weight: float
     content_value: float
@@ -72,3 +73,16 @@ class PackageToCalc(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class CalculationLogModel(BaseModel):
+    package_id: int
+    package_type_id: int
+    delivery_cost: float
+    date: datetime
+
+
+class CalculationLogAggregatedModel(BaseModel):
+    package_type_id: int
+    delivery_cost_sum: float
+    date: str

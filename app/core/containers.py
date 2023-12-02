@@ -2,6 +2,7 @@ from dependency_injector import containers, providers
 
 from core.settings import settings
 from infrastructure.models import get_sessionmaker
+from infrastructure.mongo_client import MongoClient
 from infrastructure.mysql_repository import DeltaMySQLRepository
 from infrastructure.redis_temporary_storage import RedisTemporaryStorage
 from services.use_cases.package_cost_calculator import PackageCostCalculator
@@ -25,10 +26,16 @@ class Container(containers.DeclarativeContainer):
         config=settings,
     )
 
+    log_repository = providers.Singleton(
+        MongoClient,
+        config=settings,
+    )
+
     cost_calculator: providers.Provider[PackageCostCalculator] = providers.Factory(
         PackageCostCalculator,
         repository=repository,
         temp_storage=redis_repository,
+        log_repository=log_repository,
         config=settings,
     )
 

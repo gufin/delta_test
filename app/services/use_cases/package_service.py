@@ -19,7 +19,7 @@ class PackageService:
         self.repository = repository
 
     async def register_package(
-        self, package_data: PackageCreate, user_id: str
+            self, package_data: PackageCreate, user_id: str
     ) -> PackageResponse:
         logger.info("Registering package for user_id: %s", user_id)
         response = await self.repository.register_package(package_data, user_id)
@@ -33,12 +33,12 @@ class PackageService:
         return package_types
 
     async def get_my_packages(
-        self,
-        user_id: str,
-        type_id: Optional[int],
-        delivery_cost_calculated: Optional[bool],
-        offset: int,
-        limit: int,
+            self,
+            user_id: str,
+            type_id: Optional[int],
+            delivery_cost_calculated: Optional[bool],
+            offset: int,
+            limit: int,
     ) -> MyPackages:
         logger.info("Retrieving packages for user_id: %s", user_id)
         my_packages = await self.repository.get_my_packages(
