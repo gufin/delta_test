@@ -2,17 +2,17 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    project_name: str = 'delta_test_task'
-    db_host: str = '127.0.0.1'
+    project_name: str = "delta_test_task"
+    db_host: str = "db"
     db_port: int = 3306
-    mysql_db: str = 'mysql'
-    mysql_user: str = 'root'
-    mysql_password: str = 'password'
+    mysql_db: str = "mysql"
+    mysql_user: str = "root"
+    mysql_password: str = "password"
     currency_data_source: str = "https://www.cbr-xml-daily.ru/daily_json.js"
     currency_calc_code: str = "USD"
-    redis_host: str = '127.0.0.1'
-    redis_port: int = 6380
-    mongo_host: str = '127.0.0.1'
+    redis_host: str = "redis"
+    redis_port: int = 6379
+    mongo_host: str = "mongodb"
     mongo_port: int = 27017
 
     @property

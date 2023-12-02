@@ -1,5 +1,7 @@
 from sqlalchemy import (
-    CHAR, Column,
+    BigInteger,
+    CHAR,
+    Column,
     DateTime,
     Float,
     ForeignKey,
@@ -41,6 +43,8 @@ class Package(Base):
     delivery_cost = Column(Float)
     type_id = Column(Integer, ForeignKey("package_types.id"), nullable=False)
     user_id = Column(CHAR(36), ForeignKey("users.id"), nullable=False)
+    company_id = Column(Integer, index=True, nullable=True)
+    version = Column(BigInteger, nullable=False, default=0)
 
     user = relationship("User", back_populates="packages")
     type = relationship("PackageType", back_populates="packages")

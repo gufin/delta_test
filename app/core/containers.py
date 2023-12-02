@@ -1,4 +1,5 @@
 from dependency_injector import containers, providers
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.settings import settings
 from infrastructure.models import get_sessionmaker
@@ -13,7 +14,7 @@ class Container(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(packages=["endpoints"])
     config = providers.Configuration()
 
-    sessionmaker = providers.Factory(get_sessionmaker)
+    sessionmaker: providers.Factory[AsyncSession] = providers.Factory(get_sessionmaker)
 
     repository: providers.Provider[DeltaMySQLRepository] = providers.Singleton(
         DeltaMySQLRepository,
@@ -26,7 +27,7 @@ class Container(containers.DeclarativeContainer):
         config=settings,
     )
 
-    log_repository = providers.Singleton(
+    log_repository: providers.Singleton[MongoClient] = providers.Singleton(
         MongoClient,
         config=settings,
     )
@@ -39,4 +40,6 @@ class Container(containers.DeclarativeContainer):
         config=settings,
     )
 
-    package_service: providers.Provider[PackageService] = providers.Factory(PackageService, repository=repository)
+    package_service: providers.Provider[PackageService] = providers.Factory(
+        PackageService, repository=repository
+    )

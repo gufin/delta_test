@@ -8,10 +8,14 @@ from infrastructure.redis_temporary_storage import RedisTemporaryStorage
 from services.use_cases.package_cost_calculator import PackageCostCalculator
 
 sessionmaker = get_sessionmaker()
-my_sql_repository = DeltaMySQLRepository(config=settings.storage_url, sessionmaker=sessionmaker)
+my_sql_repository = DeltaMySQLRepository(
+    config=settings.storage_url, sessionmaker=sessionmaker
+)
 redis_repository = RedisTemporaryStorage(config=settings)
 log_repository = MongoClient(config=settings)
-cost_calculator = PackageCostCalculator(my_sql_repository, redis_repository, log_repository, settings)
+cost_calculator = PackageCostCalculator(
+    my_sql_repository, redis_repository, log_repository, settings
+)
 
 
 async def main():

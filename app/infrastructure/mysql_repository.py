@@ -1,14 +1,18 @@
 from typing import Optional
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy.orm import joinedload
 
 from infrastructure.models import (
-    engine,
     Package,
     PackageType,
     User,
+)
+from infrastructure.utils import (
+    AlreadyAssignedException,
+    NotFoundException,
+    UpdateConflictException,
 )
 from schemas import (
     MyPackages,
@@ -178,3 +182,29 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
                     if package := result.scalar_one_or_none():
                         package.delivery_cost = package_calc.delivery_cost
                 await session.commit()
+
+    async def assign_package(self, package_id: int, company_id: int) -> None:
+        async with self.sessionmaker() as session:
+            result = await session.execute(
+                select(Package).filter(Package.id == package_id)
+            )
+            package = result.scalar_one_or_none()
+
+            if package is None:
+                raise NotFoundException("Package not found")
+
+            if package.company_id:
+                raise AlreadyAssignedException("Package already assigned")
+
+            updated_rows = await session.execute(
+                update(Package)
+                .where(Package.id == package_id, Package.version == package.version)
+                .values(company_id=company_id, version=Package.version + 1)
+            )
+
+            if updated_rows.rowcount == 0:
+                raise UpdateConflictException(
+                    "Conflict: Package was assigned by another transaction"
+                )
+
+            await session.commit()

@@ -53,7 +53,7 @@ def alembic_config(temp_postgres):
 def engine_async(temp_postgres) -> AsyncEngine:
     engine = create_async_engine(temp_postgres, future=True, echo=True)
     return engine
-    #await engine.dispose()
+    # await engine.dispose()
 
 
 @pytest.fixture
@@ -99,7 +99,7 @@ async def user_data_sample(migrated_postgres, session):
     """
     Create courier sample for tests.
     """
-    new_object = User(id='34447757-bc8f-447d-b7c8-960f7476c436')
+    new_object = User(id="34447757-bc8f-447d-b7c8-960f7476c436")
     async with session.begin():
         session.add(new_object)
     await session.commit()

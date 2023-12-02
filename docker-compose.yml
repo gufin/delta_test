@@ -1,25 +1,25 @@
 version: '3.9'
 services:
-#  application:
-#    build: .
-#    restart: always
-#    depends_on:
-#      - db
-#    ports:
-#      - "8080:8080"
-#    env_file:
-#      - .env
-  #
-  #  cost_calculator:
-  #    build:
-  #      context: .
-  #      dockerfile: DockerfileCalculator
-  #    restart: always
-  #    depends_on:
-  #      - db
-  #      - redis
-  #    env_file:
-  #      - .env
+  application:
+    build: .
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+
+  cost_calculator:
+    build:
+      context: .
+      dockerfile: DockerfileCalculator
+    restart: always
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
 
   db:
     image: mysql:8.0
@@ -31,8 +31,6 @@ services:
     restart: always
     volumes:
       - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
 
   redis:
     container_name: backend_redis
@@ -41,14 +39,12 @@ services:
       - redis_data:/data
     expose:
       - "6379"
-    ports:
-      - "6380:6379"
 
   mongodb:
     image: mongo:latest
     container_name: mongodb
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     volumes:
       - mongodb_data:/data/db
 

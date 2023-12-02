@@ -7,8 +7,14 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException
 from starlette.responses import JSONResponse
 
 from core.containers import Container
+from infrastructure.utils import (
+    AlreadyAssignedException,
+    NotFoundException,
+    UpdateConflictException,
+)
 from schemas import (
-    CalculationLogAggregatedModel, MyPackages,
+    CalculationLogAggregatedModel,
+    MyPackages,
     PackageCreate,
     PackageInfo,
     PackageResponse,
@@ -22,13 +28,16 @@ router = APIRouter()
 
 @router.get("/start_session")
 @inject
-async def start_session(session_id: Optional[str] = Cookie(None),
-                        package_service: PackageService = Depends(Provide[Container.package_service]),
-                        ):
+async def start_session(
+        session_id: Optional[str] = Cookie(None),
+        package_service: PackageService = Depends(Provide[Container.package_service]),
+):
     if not session_id:
         session_id = str(uuid4())
         await package_service.save_session(session_id)
-    response = JSONResponse(content={"message": "Session started", "session_id": session_id})
+    response = JSONResponse(
+        content={"message": "Session started", "session_id": session_id}
+    )
     response.set_cookie(key="session_id", value=session_id)
     return response
 
@@ -123,8 +132,8 @@ async def run_calculation(
 @router.post(
     "/aggregated_data",
     response_model=list[CalculationLogAggregatedModel],
-    summary="Show aggregated data by type by period",
-    description="Show aggregated data by type by period",
+    summary="Retrieve Aggregated Delivery Costs",
+    description="Retrieves the sum of delivery costs for packages grouped by type for a given date.",
 )
 @inject
 async def aggregated_data(
@@ -134,3 +143,29 @@ async def aggregated_data(
         ),
 ):
     return await cost_calculator.get_aggregated_data(date)
+
+
+@router.post(
+    "/assign_package/{package_id}",
+    summary="Assign a Package to a Transport Company",
+    description=("Assigns a specified package to a transport company, ensuring that only the first company to "
+                 "request can bind a package."),
+)
+@inject
+async def assign_package(
+        package_id: int,
+        company_id: int,
+        package_service: PackageService = Depends(Provide[Container.package_service]),
+):
+    try:
+        await package_service.assign_package(package_id, company_id)
+        return {"message": "Package assigned successfully"}
+    except NotFoundException as e:
+        raise HTTPException(status_code=404, detail="Package not found") from e
+    except AlreadyAssignedException as e:
+        raise HTTPException(status_code=400, detail="Package already assigned") from e
+    except UpdateConflictException as e:
+        raise HTTPException(
+            status_code=409,
+            detail="Conflict: Package was assigned by another transaction",
+        ) from e

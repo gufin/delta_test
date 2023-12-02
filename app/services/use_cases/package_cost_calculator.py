@@ -6,8 +6,11 @@ import httpx
 
 from core.settings import Settings
 from schemas import CalculationLogAggregatedModel, CalculationLogModel
-from services.use_cases.abstract_repositories import AbstractCalculationLogRepository, DeltaAbstractRepository, \
-    DeltaAbstractTemporaryStorage
+from services.use_cases.abstract_repositories import (
+    AbstractCalculationLogRepository,
+    DeltaAbstractRepository,
+    DeltaAbstractTemporaryStorage,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -89,13 +92,19 @@ class PackageCostCalculator:
             logger.debug(
                 f"Calculated delivery cost for package {package.id}: {package.delivery_cost}"
             )
-            calc_log_data.append(CalculationLogModel(package_id=package.id,
-                                                     package_type_id=package.package_type_id,
-                                                     delivery_cost=package.delivery_cost,
-                                                     date=datetime.now()))
+            calc_log_data.append(
+                CalculationLogModel(
+                    package_id=package.id,
+                    package_type_id=package.package_type_id,
+                    delivery_cost=package.delivery_cost,
+                    date=datetime.now(),
+                )
+            )
         await self.repository.update_delivery_costs(packages_to_calc)
         await self.log_repository.add_calc_data(calc_log_data)
         logger.info("Delivery cost calculation completed.")
 
-    async def get_aggregated_data(self, date: datetime) -> list[CalculationLogAggregatedModel]:
+    async def get_aggregated_data(
+        self, date: datetime
+    ) -> list[CalculationLogAggregatedModel]:
         return await self.log_repository.get_aggregated_data(date)
