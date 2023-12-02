@@ -6,6 +6,8 @@ The following tools were used in the backend part of the project:
 
 The infrastructure part used:
 - MySQL
+- Redis
+- MongoDB
 - Docker
 - Uvicorn
 
