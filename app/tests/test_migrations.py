@@ -6,7 +6,7 @@ from alembic.script import Script, ScriptDirectory
 
 def get_revisions():
     # Create Alembic configuration object
-    config = Config("alembic.ini")
+    config = Config("app/alembic.ini")
 
     # Get directory object with Alembic migrations
     revisions_dir = ScriptDirectory.from_config(config)

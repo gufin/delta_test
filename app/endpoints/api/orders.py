@@ -129,7 +129,7 @@ async def run_calculation(
     return {"message": "Calculation is complete."}
 
 
-@router.post(
+@router.get(
     "/aggregated_data",
     response_model=list[CalculationLogAggregatedModel],
     summary="Retrieve Aggregated Delivery Costs",
