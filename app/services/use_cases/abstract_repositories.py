@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional
 
-from schemas import (
+from app.schemas import (
     CalculationLogAggregatedModel,
     CalculationLogModel,
     MyPackages,
@@ -29,7 +29,7 @@ class DeltaAbstractRepository(ABC):
     @abstractmethod
     async def get_my_packages(
         self,
-        user_id: int,
+        user_id: str,
         type_id: Optional[int],
         delivery_cost_calculated: Optional[bool],
         offset: int,

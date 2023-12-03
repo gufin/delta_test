@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 from motor.motor_asyncio import AsyncIOMotorClient as Mongo
 from pymongo.errors import BulkWriteError
 
-from core.settings import Settings
-from schemas import CalculationLogAggregatedModel, CalculationLogModel
-from services.use_cases.abstract_repositories import AbstractCalculationLogRepository
+from app.core.settings import Settings
+from app.schemas import CalculationLogAggregatedModel, CalculationLogModel
+from app.services.use_cases.abstract_repositories import AbstractCalculationLogRepository
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("package_service")

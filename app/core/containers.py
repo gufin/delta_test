@@ -1,17 +1,17 @@
 from dependency_injector import containers, providers
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.settings import settings
-from infrastructure.models import get_sessionmaker
-from infrastructure.mongo_client import MongoClient
-from infrastructure.mysql_repository import DeltaMySQLRepository
-from infrastructure.redis_temporary_storage import RedisTemporaryStorage
-from services.use_cases.package_cost_calculator import PackageCostCalculator
-from services.use_cases.package_service import PackageService
+from app.core.settings import settings
+from app.infrastructure.models import get_sessionmaker
+from app.infrastructure.mongo_client import MongoClient
+from app.infrastructure.mysql_repository import DeltaMySQLRepository
+from app.infrastructure.redis_temporary_storage import RedisTemporaryStorage
+from app.services.use_cases.package_cost_calculator import PackageCostCalculator
+from app.services.use_cases.package_service import PackageService
 
 
 class Container(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(packages=["endpoints"])
+    wiring_config = containers.WiringConfiguration(packages=["app.endpoints"])
     config = providers.Configuration()
 
     sessionmaker: providers.Factory[AsyncSession] = providers.Factory(get_sessionmaker)

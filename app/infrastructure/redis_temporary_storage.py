@@ -1,6 +1,6 @@
 import redis
 
-from services.use_cases.abstract_repositories import DeltaAbstractTemporaryStorage
+from app.services.use_cases.abstract_repositories import DeltaAbstractTemporaryStorage
 
 
 class RedisTemporaryStorage(DeltaAbstractTemporaryStorage):

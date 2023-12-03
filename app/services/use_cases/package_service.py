@@ -1,14 +1,14 @@
 import logging
 from typing import Optional
 
-from schemas import (
+from app.schemas import (
     MyPackages,
     PackageCreate,
     PackageInfo,
     PackageResponse,
     PackageTypeModel,
 )
-from services.use_cases.abstract_repositories import DeltaAbstractRepository
+from app.services.use_cases.abstract_repositories import DeltaAbstractRepository
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("package_service")

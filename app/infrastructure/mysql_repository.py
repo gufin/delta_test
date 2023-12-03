@@ -4,17 +4,17 @@ from sqlalchemy import and_, func, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy.orm import joinedload
 
-from infrastructure.models import (
+from app.infrastructure.models import (
     Package,
     PackageType,
     User,
 )
-from infrastructure.utils import (
+from app.infrastructure.utils import (
     AlreadyAssignedException,
     NotFoundException,
     UpdateConflictException,
 )
-from schemas import (
+from app.schemas import (
     MyPackages,
     PackageCreate,
     PackageInfo,
@@ -23,7 +23,7 @@ from schemas import (
     PackageTypeModel,
     UserInfo,
 )
-from services.use_cases.abstract_repositories import DeltaAbstractRepository
+from app.services.use_cases.abstract_repositories import DeltaAbstractRepository
 
 
 class DeltaMySQLRepository(DeltaAbstractRepository):

@@ -4,9 +4,9 @@ from typing import Optional
 
 import httpx
 
-from core.settings import Settings
-from schemas import CalculationLogAggregatedModel, CalculationLogModel
-from services.use_cases.abstract_repositories import (
+from app.core.settings import Settings
+from app.schemas import CalculationLogAggregatedModel, CalculationLogModel
+from app.services.use_cases.abstract_repositories import (
     AbstractCalculationLogRepository,
     DeltaAbstractRepository,
     DeltaAbstractTemporaryStorage,

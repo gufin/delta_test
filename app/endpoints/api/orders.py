@@ -6,13 +6,13 @@ from dependency_injector.wiring import inject, Provide
 from fastapi import APIRouter, Cookie, Depends, HTTPException
 from starlette.responses import JSONResponse
 
-from core.containers import Container
-from infrastructure.utils import (
+from app.core.containers import Container
+from app.infrastructure.utils import (
     AlreadyAssignedException,
     NotFoundException,
     UpdateConflictException,
 )
-from schemas import (
+from app.schemas import (
     CalculationLogAggregatedModel,
     MyPackages,
     PackageCreate,
@@ -20,8 +20,8 @@ from schemas import (
     PackageResponse,
     PackageTypeModel,
 )
-from services.use_cases.package_cost_calculator import PackageCostCalculator
-from services.use_cases.package_service import PackageService
+from app.services.use_cases.package_cost_calculator import PackageCostCalculator
+from app.services.use_cases.package_service import PackageService
 
 router = APIRouter()
 

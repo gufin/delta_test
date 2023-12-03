@@ -1,9 +1,9 @@
 import uvicorn
 from fastapi import FastAPI
 
-from core.containers import Container
-from core.settings import settings
-from endpoints.api import orders
+from app.core.containers import Container
+from app.core.settings import settings
+from app.endpoints.api import orders
 
 
 def get_application() -> FastAPI:
