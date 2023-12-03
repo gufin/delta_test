@@ -1,10 +1,19 @@
+from datetime import datetime
 from typing import Optional
+from uuid import uuid4
 
 from dependency_injector.wiring import inject, Provide
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Cookie, Depends, HTTPException
+from starlette.responses import JSONResponse
 
 from core.containers import Container
-from models import (
+from infrastructure.utils import (
+    AlreadyAssignedException,
+    NotFoundException,
+    UpdateConflictException,
+)
+from schemas import (
+    CalculationLogAggregatedModel,
     MyPackages,
     PackageCreate,
     PackageInfo,
@@ -17,14 +26,20 @@ from services.use_cases.package_service import PackageService
 router = APIRouter()
 
 
-def get_user_id(request: Request) -> int:
-    user_id = request.headers.get("user_id")
-    if user_id is None:
-        raise HTTPException(status_code=400, detail="User ID is missing in the headers")
-    try:
-        return int(user_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid User ID format") from e
+@router.get("/start_session")
+@inject
+async def start_session(
+        session_id: Optional[str] = Cookie(None),
+        package_service: PackageService = Depends(Provide[Container.package_service]),
+):
+    if not session_id:
+        session_id = str(uuid4())
+        await package_service.save_session(session_id)
+    response = JSONResponse(
+        content={"message": "Session started", "session_id": session_id}
+    )
+    response.set_cookie(key="session_id", value=session_id)
+    return response
 
 
 @router.post(
@@ -32,17 +47,17 @@ def get_user_id(request: Request) -> int:
     response_model=PackageResponse,
     summary="Register a new package",
     description=(
-        "Creates a new package with the given details and associates it with the user ID provided "
-        "in the header."
+            "Creates a new package with the given details and associates it with the user ID provided "
+            "in the header."
     ),
 )
 @inject
 async def register_package(
-    package_data: PackageCreate,
-    user_id: int = Depends(get_user_id),
-    package_service: PackageService = Depends(Provide[Container.package_service]),
+        package_data: PackageCreate,
+        session_id: str = Cookie(...),
+        package_service: PackageService = Depends(Provide[Container.package_service]),
 ) -> PackageResponse:
-    return await package_service.register_package(package_data, user_id)
+    return await package_service.register_package(package_data, session_id)
 
 
 @router.get(
@@ -53,7 +68,7 @@ async def register_package(
 )
 @inject
 async def get_package_types(
-    package_service: PackageService = Depends(Provide[Container.package_service]),
+        package_service: PackageService = Depends(Provide[Container.package_service]),
 ) -> list[PackageTypeModel]:
     return await package_service.get_package_types()
 
@@ -63,21 +78,21 @@ async def get_package_types(
     response_model=MyPackages,
     summary="Get user's packages",
     description=(
-        "Retrieves packages associated with the user, with optional filters for type and delivery "
-        "cost calculation status."
+            "Retrieves packages associated with the user, with optional filters for type and delivery "
+            "cost calculation status."
     ),
 )
 @inject
 async def get_my_packages(
-    type_id: Optional[int] = None,
-    delivery_cost_calculated: Optional[bool] = None,
-    user_id: int = Depends(get_user_id),
-    offset: int = 0,
-    limit: int = 10,
-    package_service: PackageService = Depends(Provide[Container.package_service]),
+        type_id: Optional[int] = None,
+        delivery_cost_calculated: Optional[bool] = None,
+        session_id: Optional[str] = Cookie(None),
+        offset: int = 0,
+        limit: int = 10,
+        package_service: PackageService = Depends(Provide[Container.package_service]),
 ) -> MyPackages:
     return await package_service.get_my_packages(
-        user_id, type_id, delivery_cost_calculated, offset, limit
+        session_id, type_id, delivery_cost_calculated, offset, limit
     )
 
 
@@ -89,11 +104,11 @@ async def get_my_packages(
 )
 @inject
 async def get_package(
-    package_id: int,
-    user_id: int = Depends(get_user_id),
-    package_service: PackageService = Depends(Provide[Container.package_service]),
+        package_id: int,
+        session_id: Optional[str] = Cookie(None),
+        package_service: PackageService = Depends(Provide[Container.package_service]),
 ) -> PackageInfo:
-    result = await package_service.get_package(user_id, package_id)
+    result = await package_service.get_package(session_id, package_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Package not found")
     return result
@@ -106,9 +121,51 @@ async def get_package(
 )
 @inject
 async def run_calculation(
-    cost_calculator: PackageCostCalculator = Depends(
-        Provide[Container.cost_calculator]
-    ),
+        cost_calculator: PackageCostCalculator = Depends(
+            Provide[Container.cost_calculator]
+        ),
 ):
     await cost_calculator.calculate_delivery_cost()
     return {"message": "Calculation is complete."}
+
+
+@router.get(
+    "/aggregated_data",
+    response_model=list[CalculationLogAggregatedModel],
+    summary="Retrieve Aggregated Delivery Costs",
+    description="Retrieves the sum of delivery costs for packages grouped by type for a given date.",
+)
+@inject
+async def aggregated_data(
+        date: datetime,
+        cost_calculator: PackageCostCalculator = Depends(
+            Provide[Container.cost_calculator]
+        ),
+):
+    return await cost_calculator.get_aggregated_data(date)
+
+
+@router.post(
+    "/assign_package/{package_id}",
+    summary="Assign a Package to a Transport Company",
+    description=("Assigns a specified package to a transport company, ensuring that only the first company to "
+                 "request can bind a package."),
+)
+@inject
+async def assign_package(
+        package_id: int,
+        company_id: int,
+        package_service: PackageService = Depends(Provide[Container.package_service]),
+):
+    try:
+        await package_service.assign_package(package_id, company_id)
+        return {"message": "Package assigned successfully"}
+    except NotFoundException as e:
+        raise HTTPException(status_code=404, detail="Package not found") from e
+    except AlreadyAssignedException as e:
+        raise HTTPException(status_code=400, detail="Package already assigned") from e
+    except UpdateConflictException as e:
+        raise HTTPException(
+            status_code=409,
+            detail="Conflict: Package was assigned by another transaction",
+        ) from e

@@ -27,7 +27,7 @@ def upgrade() -> None:
     )
     op.create_table(
         "users",
-        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("id", sa.CHAR(36), nullable=False),
         sa.Column(
             "last_access_time",
             sa.DateTime(timezone=True),
@@ -44,7 +44,9 @@ def upgrade() -> None:
         sa.Column("content_value", sa.Float(), nullable=False),
         sa.Column("delivery_cost", sa.Float(), nullable=True),
         sa.Column("type_id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.CHAR(36), nullable=False),
+        sa.Column("company_id", sa.Integer(), index=True, nullable=True),
+        sa.Column("version", sa.BigInteger, nullable=False, default=0),
         sa.ForeignKeyConstraint(
             ["type_id"],
             ["package_types.id"],

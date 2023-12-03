@@ -1,16 +1,20 @@
 from typing import Optional
 
-from sqlalchemy import and_, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, func, select, update
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy.orm import joinedload
 
-from infrastructure.entities import (
-    engine,
+from infrastructure.models import (
     Package,
     PackageType,
     User,
 )
-from models import (
+from infrastructure.utils import (
+    AlreadyAssignedException,
+    NotFoundException,
+    UpdateConflictException,
+)
+from schemas import (
     MyPackages,
     PackageCreate,
     PackageInfo,
@@ -23,11 +27,12 @@ from services.use_cases.abstract_repositories import DeltaAbstractRepository
 
 
 class DeltaMySQLRepository(DeltaAbstractRepository):
-    def __init__(self, *, config: dict):
+    def __init__(self, *, config: dict, sessionmaker: async_sessionmaker[AsyncSession]):
         self.config = config
+        self.sessionmaker = sessionmaker
 
     async def register_package(
-        self, package_data: PackageCreate, user_id: int
+        self, package_data: PackageCreate, user_id: str
     ) -> PackageResponse:
         new_package = Package(
             name=package_data.name,
@@ -37,7 +42,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
             user_id=user_id,
         )
 
-        async with AsyncSession(engine) as session:
+        async with self.sessionmaker() as session:
             async with session.begin():
                 session.add(new_package)
                 await session.flush()
@@ -46,7 +51,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
         return package_response
 
     async def get_package_types(self) -> list[PackageTypeModel]:
-        async with AsyncSession(engine) as session:
+        async with self.sessionmaker() as session:
             async with session.begin():
                 package_types = await session.execute(select(PackageType))
                 package_types_list = package_types.scalars().all()
@@ -58,13 +63,13 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
 
     async def get_my_packages(
         self,
-        user_id: int,
+        user_id: str,
         type_id: Optional[int],
         delivery_cost_calculated: Optional[bool],
         offset: int,
         limit: int,
     ) -> MyPackages:
-        async with AsyncSession(engine) as session:
+        async with self.sessionmaker() as session:
             conditions = [Package.user_id == user_id]
             if type_id is not None:
                 conditions.append(Package.type_id == type_id)
@@ -109,8 +114,8 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
                 data=package_infos,
             )
 
-    async def get_package(self, user_id: int, package_id: int) -> Optional[PackageInfo]:
-        async with AsyncSession(engine) as session:
+    async def get_package(self, user_id: str, package_id: int) -> Optional[PackageInfo]:
+        async with self.sessionmaker() as session:
             conditions = [Package.user_id == user_id, Package.id == package_id]
             package_query = select(Package).where(and_(*conditions))
             package_result = await session.execute(package_query)
@@ -134,8 +139,8 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
                 package_type=PackageTypeModel.from_orm(package_type),
             )
 
-    async def get_or_create_user(self, user_id: int) -> UserInfo:
-        async with AsyncSession(engine) as session:
+    async def get_or_create_user(self, user_id: str) -> UserInfo:
+        async with self.sessionmaker() as session:
             user_query = select(User).where(User.id == user_id)
             user_result = await session.execute(user_query)
             user = user_result.scalar()
@@ -149,7 +154,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
             return UserInfo.from_orm(user)
 
     async def get_packages_to_calc(self) -> list[PackageToCalc]:
-        async with AsyncSession(engine) as session:
+        async with self.sessionmaker() as session:
             packages_query = select(Package).where(Package.delivery_cost.is_(None))
             packages_result = await session.execute(packages_query)
             packages = packages_result.scalars().all()
@@ -157,6 +162,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
             return [
                 PackageToCalc(
                     id=package.id,
+                    package_type_id=package.type_id,
                     name=package.name,
                     weight=package.weight,
                     delivery_cost=package.delivery_cost,
@@ -168,7 +174,7 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
     async def update_delivery_costs(
         self, packages_to_update: list[PackageToCalc]
     ) -> None:
-        async with AsyncSession(engine) as session:
+        async with self.sessionmaker() as session:
             async with session.begin():
                 for package_calc in packages_to_update:
                     query = select(Package).where(Package.id == package_calc.id)
@@ -176,3 +182,29 @@ class DeltaMySQLRepository(DeltaAbstractRepository):
                     if package := result.scalar_one_or_none():
                         package.delivery_cost = package_calc.delivery_cost
                 await session.commit()
+
+    async def assign_package(self, package_id: int, company_id: int) -> None:
+        async with self.sessionmaker() as session:
+            result = await session.execute(
+                select(Package).filter(Package.id == package_id)
+            )
+            package = result.scalar_one_or_none()
+
+            if package is None:
+                raise NotFoundException("Package not found")
+
+            if package.company_id:
+                raise AlreadyAssignedException("Package already assigned")
+
+            updated_rows = await session.execute(
+                update(Package)
+                .where(Package.id == package_id, Package.version == package.version)
+                .values(company_id=company_id, version=Package.version + 1)
+            )
+
+            if updated_rows.rowcount == 0:
+                raise UpdateConflictException(
+                    "Conflict: Package was assigned by another transaction"
+                )
+
+            await session.commit()

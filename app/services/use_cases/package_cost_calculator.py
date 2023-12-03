@@ -5,8 +5,12 @@ from typing import Optional
 import httpx
 
 from core.settings import Settings
-from services.use_cases.abstract_repositories import DeltaAbstractRepository
-from services.use_cases.abstract_temporary_storage import DeltaAbstractTemporaryStorage
+from schemas import CalculationLogAggregatedModel, CalculationLogModel
+from services.use_cases.abstract_repositories import (
+    AbstractCalculationLogRepository,
+    DeltaAbstractRepository,
+    DeltaAbstractTemporaryStorage,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -17,15 +21,17 @@ class PackageCostCalculator:
         self,
         repository: DeltaAbstractRepository,
         temp_storage: DeltaAbstractTemporaryStorage,
+        log_repository: AbstractCalculationLogRepository,
         config: Settings,
     ):
         self.repository = repository
         self.temp_storage = temp_storage
+        self.log_repository = log_repository
         self.config = config
         logger.info("PackageCostCalculator service has been initialized.")
 
     @staticmethod
-    def get_date_code():
+    def get_date_code() -> str:
         today = datetime.now()
         if today.weekday() not in [5, 6]:
             date_code = today.strftime("%Y-%m-%d")
@@ -66,7 +72,7 @@ class PackageCostCalculator:
         except Exception as e:
             logger.error(f"An error occurred while fetching exchange rate: {e}")
 
-    async def calculate_delivery_cost(self):
+    async def calculate_delivery_cost(self) -> None:
         logger.info("Starting delivery cost calculation.")
         rate = await self.get_current_exchange_rate(self.config.currency_calc_code)
         if rate is None:
@@ -78,6 +84,7 @@ class PackageCostCalculator:
         if not packages_to_calc:
             logger.info("No packages found for delivery cost calculation.")
             return
+        calc_log_data = []
         for package in packages_to_calc:
             package.delivery_cost = (
                 package.weight * 0.5 + package.content_value * 0.01
@@ -85,5 +92,19 @@ class PackageCostCalculator:
             logger.debug(
                 f"Calculated delivery cost for package {package.id}: {package.delivery_cost}"
             )
+            calc_log_data.append(
+                CalculationLogModel(
+                    package_id=package.id,
+                    package_type_id=package.package_type_id,
+                    delivery_cost=package.delivery_cost,
+                    date=datetime.now(),
+                )
+            )
         await self.repository.update_delivery_costs(packages_to_calc)
+        await self.log_repository.add_calc_data(calc_log_data)
         logger.info("Delivery cost calculation completed.")
+
+    async def get_aggregated_data(
+        self, date: datetime
+    ) -> list[CalculationLogAggregatedModel]:
+        return await self.log_repository.get_aggregated_data(date)

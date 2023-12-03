@@ -1,4 +1,6 @@
 from sqlalchemy import (
+    BigInteger,
+    CHAR,
     Column,
     DateTime,
     Float,
@@ -7,7 +9,7 @@ from sqlalchemy import (
     Integer,
     String,
 )
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -18,10 +20,14 @@ Base = declarative_base()
 metadata = Base.metadata
 
 
+def get_sessionmaker():
+    return async_sessionmaker(bind=engine, expire_on_commit=False)
+
+
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(CHAR(36), primary_key=True)
     last_access_time = Column(DateTime(timezone=True), server_default=func.now())
 
     packages = relationship("Package", back_populates="user")
@@ -36,7 +42,9 @@ class Package(Base):
     content_value = Column(Float, nullable=False)
     delivery_cost = Column(Float)
     type_id = Column(Integer, ForeignKey("package_types.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(CHAR(36), ForeignKey("users.id"), nullable=False)
+    company_id = Column(Integer, index=True, nullable=True)
+    version = Column(BigInteger, nullable=False, default=0)
 
     user = relationship("User", back_populates="packages")
     type = relationship("PackageType", back_populates="packages")
